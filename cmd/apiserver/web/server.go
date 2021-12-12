@@ -2,8 +2,8 @@ package web
 
 import (
 	"fmt"
-	"gitgo/server/server"
-	"gitgo/server/web/routes"
+	"gitgo/apiserver/server"
+	"gitgo/apiserver/web/routes"
 	"github.com/gorilla/mux"
 	"log"
 	"net"
@@ -41,7 +41,10 @@ func NewServer(cfg server.Config) (*Server, error) {
 		Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 	router.
 		Handle("/api/v1/repositories", &routes.Repositories{}).
-		Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+		Methods(http.MethodGet, http.MethodPut)
+	router.
+		Handle("/api/v1/repositories/{name}", &routes.Repository{}).
+		Methods(http.MethodGet, http.MethodDelete)
 	router.
 		Handle("/api/v1/tokens", &routes.Tokens{}).
 		Methods(http.MethodGet, http.MethodPost)

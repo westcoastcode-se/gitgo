@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"gitgo/server/web/responses"
+	"gitgo/apiserver/web/responses"
 	"net/http"
 )
 

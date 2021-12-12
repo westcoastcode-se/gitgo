@@ -1,4 +1,4 @@
-module gitgo/server
+module gitgo/apiserver
 
 go 1.17
 

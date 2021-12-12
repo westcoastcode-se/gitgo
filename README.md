@@ -1,6 +1,11 @@
 # GitGo
 
-## Server
+GitGo is split into three parts:
+1. The API server
+2. The GIT server
+3. The CLI client
+
+## API Server
 
 The server is split into two parts. The first one is used for manipulating the server using REST requests.
 The second part is used to send git data over ssh
@@ -41,3 +46,8 @@ command="docker exec gitgo --config=/gitgo/conf/app.conf serv key-1",no-port-for
 ```
 
 ## client
+
+## TODO
+
+* SuperUser user should authenticate using client-side certificate
+* SSH server should validate a fingerprint using the rest API (f.ex. HEAD /api/v1/repositories/{path}/keys)

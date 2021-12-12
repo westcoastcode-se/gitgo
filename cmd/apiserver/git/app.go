@@ -2,8 +2,8 @@ package git
 
 import (
 	"fmt"
-	"gitgo/server/server"
-	"gitgo/server/user"
+	"gitgo/apiserver/server"
+	"gitgo/apiserver/user"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"

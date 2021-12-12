@@ -2,7 +2,7 @@ package git
 
 import (
 	"errors"
-	"gitgo/server/utils"
+	"gitgo/apiserver/utils"
 	"regexp"
 	"strings"
 )

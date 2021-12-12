@@ -2,9 +2,9 @@ package main
 
 import (
 	"gitgo/api"
-	"gitgo/server/git"
-	"gitgo/server/server"
-	"gitgo/server/web"
+	"gitgo/apiserver/git"
+	"gitgo/apiserver/server"
+	"gitgo/apiserver/web"
 	"log"
 )
 

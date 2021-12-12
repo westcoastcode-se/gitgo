@@ -2,6 +2,10 @@ package user
 
 import "gitgo/api"
 
+type Users struct {
+	Users []*User
+}
+
 type User struct {
 	Name       string
 	Password   string
