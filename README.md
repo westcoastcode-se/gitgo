@@ -1,6 +1,11 @@
-# gitgo
+# GitGo
 
-## server
+## Server
+
+The server is split into two parts. The first one is used for manipulating the server using REST requests.
+The second part is used to send git data over ssh
+
+### Installation guide
 
 1. Create a git user
 2. Create a gitgo user (used together with docker container)

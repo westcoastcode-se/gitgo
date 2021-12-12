@@ -1,6 +1,7 @@
-package server
+package git
 
 import (
+	"gitgo/server/server"
 	"gitgo/server/user"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -10,9 +11,9 @@ import (
 
 const Version = "SSH-2.0-GitGo-1.0.0"
 
-type App struct {
+type Server struct {
 	// Config contains information on how the server should act
-	Config  Config
+	Config  server.Config
 	Version string
 
 	listener net.Listener
@@ -22,11 +23,11 @@ type App struct {
 	UserDatabase user.Database
 }
 
-func (a *App) ListenAndServe() error {
-	log.Printf("Listening for requests on %s\n", a.Config.Address)
+func (a *Server) ListenAndServe() error {
+	log.Printf("Listening for requests on %s\n", a.Config.GitConfig.Address)
 
 	var err error
-	a.listener, err = net.Listen("tcp", a.Config.Address)
+	a.listener, err = net.Listen("tcp", a.Config.GitConfig.Address)
 	if err != nil {
 		return nil
 	}
@@ -46,11 +47,12 @@ func (a *App) ListenAndServe() error {
 }
 
 // HostKey can be used to fetch the private key used by the ssh server
-func (a *App) HostKey() ssh.Signer {
+func (a *Server) HostKey() ssh.Signer {
 	return a.hostKey
 }
 
-func NewApp(cfg Config) *App {
+// NewServer creates a new git ssh server
+func NewServer(cfg server.Config) *Server {
 	privateBytes, err := ioutil.ReadFile(cfg.PrivateKey)
 	if err != nil {
 		log.Fatalf("could not read private key: %v", err)
@@ -61,7 +63,7 @@ func NewApp(cfg Config) *App {
 		log.Fatalf("could not parse private key: %v", err)
 	}
 
-	result := &App{
+	result := &Server{
 		Config:       cfg,
 		Version:      Version,
 		hostKey:      hostKey,

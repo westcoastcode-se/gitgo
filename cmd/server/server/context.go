@@ -19,6 +19,7 @@ var (
 	ContextUser        = &ContextKey{}
 	ContextLocalAddr   = &ContextKey{}
 	ContextRemoteAddr  = &ContextKey{}
+	ContextRequestUUID = &ContextKey{}
 )
 
 func NewContext() (*Context, context.CancelFunc) {
@@ -45,6 +46,11 @@ func (c *Context) GetLocalAddr() net.Addr {
 
 func (c *Context) GetRemoteAddr() net.Addr {
 	addr, _ := c.Context.Value(ContextRemoteAddr).(net.Addr)
+	return addr
+}
+
+func (c *Context) GetRequestUUID() string {
+	addr, _ := c.Context.Value(ContextRequestUUID).(string)
 	return addr
 }
 

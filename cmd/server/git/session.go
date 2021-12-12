@@ -1,10 +1,10 @@
-package server
+package git
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"gitgo/server/git"
+	"gitgo/server/server"
 	"gitgo/server/user"
 	"gitgo/server/utils"
 	"golang.org/x/crypto/ssh"
@@ -19,10 +19,10 @@ import (
 var PublicKeyNotFoundError = errors.New("could not find user matching the supplied publicKey")
 
 type Session struct {
-	App        *App
+	App        *Server
 	Connection net.Conn
 
-	context *Context
+	context *server.Context
 	cancel  context.CancelFunc
 
 	// User associated with this session
@@ -41,7 +41,7 @@ func (s *Session) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*
 		return nil, PublicKeyNotFoundError
 	}
 	s.user = user
-	s.context.SetValue(ContextUser, s.user)
+	s.context.SetValue(server.ContextUser, s.user)
 	return &ssh.Permissions{}, nil
 }
 
@@ -128,7 +128,7 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 	payload := utils.ReadPayload(req)
 	log.Printf("INFO: incoming exec request: %q\n", payload)
 
-	command, err := git.Parse(payload)
+	command, err := Parse(payload)
 	if err != nil {
 		log.Printf("WARN: ignoring %q because it's not a valid git command", payload)
 		if req.WantReply {
@@ -137,7 +137,7 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 		return err
 	}
 
-	if !git.RepositoryExists(filepath.Join(s.App.Config.RepositoryPath, command.Repository)) {
+	if !RepositoryExists(filepath.Join(s.App.Config.RepositoryPath, command.Repository)) {
 		log.Printf("WARN: repository not found for payload %q", payload)
 		return fmt.Errorf("could not find repository %s", command.Repository)
 	}
@@ -229,10 +229,10 @@ func isEnvironmentAllowed(key string) bool {
 }
 
 // NewSession creates a new session for a specific connection
-func NewSession(a *App, conn net.Conn) *Session {
-	ctx, cancel := NewContext()
-	ctx.SetValue(ContextLocalAddr, conn.LocalAddr())
-	ctx.SetValue(ContextRemoteAddr, conn.RemoteAddr())
+func NewSession(a *Server, conn net.Conn) *Session {
+	ctx, cancel := server.NewContext()
+	ctx.SetValue(server.ContextLocalAddr, conn.LocalAddr())
+	ctx.SetValue(server.ContextRemoteAddr, conn.RemoteAddr())
 	return &Session{
 		App:        a,
 		Connection: conn,
