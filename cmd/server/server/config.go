@@ -72,15 +72,15 @@ func LoadConfig() Config {
 	return Config{
 		GitConfig: GitConfig{
 			Address:      DefaultGitAddress,
-			ReadTimeout:  5000,
-			WriteTimeout: 5000,
-			IdleTimeout:  5000,
+			ReadTimeout:  5000 * time.Millisecond,
+			WriteTimeout: 5000 * time.Millisecond,
+			IdleTimeout:  5000 * time.Millisecond,
 		},
 		WebConfig: WebConfig{
 			Address:      DefaultWebAddress,
-			ReadTimeout:  5000,
-			WriteTimeout: 5000,
-			IdleTimeout:  5000,
+			ReadTimeout:  5000 * time.Millisecond,
+			WriteTimeout: 5000 * time.Millisecond,
+			IdleTimeout:  5000 * time.Millisecond,
 		},
 		Host:           DefaultHost,
 		CertPath:       DefaultCertPath,

@@ -15,19 +15,29 @@ func main() {
 		PublicKeys: nil,
 	}
 
-	log.Println("INFO: Starting server")
+	log.Println("INFO: Starting GitGo")
 	cfg := server.LoadConfig()
-	gitServer := git.NewServer(cfg)
-	webServer := web.NewServer(cfg)
+	var err error
+
+	// Create a git server
+	gitServer, err := git.NewServer(cfg)
+	if err != nil {
+		log.Fatalf("ERROR: Could not create git server: %v", err)
+	}
+
+	webServer, err := web.NewServer(cfg)
+	if err != nil {
+		log.Fatalf("ERROR: Could not create web server: %v", err)
+	}
 
 	go func() {
-		err := gitServer.ListenAndServe()
+		err := gitServer.AcceptClients()
 		if err != nil {
 			log.Fatalf("ERRR: Could not start git server. %e\n", err)
 		}
 	}()
 
-	err := webServer.ListenAndServe()
+	err = webServer.ServeTLS()
 	if err != nil {
 		log.Fatalf("ERROR: Could not start web server. %e\n", err)
 	}

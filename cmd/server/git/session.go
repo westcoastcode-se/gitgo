@@ -65,8 +65,11 @@ func (s *Session) HandleConnection() {
 	}
 	log.Printf("INFO: new ssh connection from %s(%s)", sConn.RemoteAddr(), sConn.ClientVersion())
 
-	// The incoming Request channel must be serviced.
+	// It's important to "service" requests, otherwise the connection will hang.
+	// We only care about requests received over a session channel on this git server
 	go ssh.DiscardRequests(reqs)
+
+	// service requests received on a channel
 	for newChannel := range newChannels {
 		channelType := newChannel.ChannelType()
 		if channelType != "session" {
@@ -74,11 +77,12 @@ func (s *Session) HandleConnection() {
 			_ = newChannel.Reject(ssh.UnknownChannelType, "unsupported channel type")
 			continue
 		}
-		s.HandleNewChannel(newChannel)
+		s.handleNewChannel(newChannel)
 	}
 }
 
-func (s *Session) HandleNewChannel(newChannel ssh.NewChannel) {
+// handleNewChannel handles all requests on an established channel
+func (s *Session) handleNewChannel(newChannel ssh.NewChannel) {
 	ch, reqs, err := newChannel.Accept()
 	if err != nil {
 		log.Printf("WARN: could not accept channel %v\n", err)
@@ -131,14 +135,10 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 	command, err := Parse(payload)
 	if err != nil {
 		log.Printf("WARN: ignoring %q because it's not a valid git command", payload)
-		if req.WantReply {
-			_ = req.Reply(false, nil)
-		}
 		return err
 	}
 
 	if !RepositoryExists(filepath.Join(s.App.Config.RepositoryPath, command.Repository)) {
-		log.Printf("WARN: repository not found for payload %q", payload)
 		return fmt.Errorf("could not find repository %s", command.Repository)
 	}
 
@@ -167,6 +167,9 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 	}
 	defer stdin.Close()
 
+	// We want to wait for stdout and stderr until the command is complete.
+	// The command might finish before we've copied all the data to the client, so this helps
+	// to ensure that the pipes are not closed beforehand
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
@@ -200,12 +203,11 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 
 	e := req.Reply(true, nil)
 	if e != nil {
-		log.Printf("WARN: command failed: %v", err)
+		return fmt.Errorf("could not send reply to client: %v", err)
 	}
 
-	// Wait for all input and output until we wait for the command to finish
+	// Wait for all pipes to finish and then wait to the command to close
 	wg.Wait()
-
 	if err = cmd.Wait(); err != nil {
 		log.Printf("WARN: command failed: %v", err)
 		return err

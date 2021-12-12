@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"gitgo/server/server"
 	"gitgo/server/user"
 	"golang.org/x/crypto/ssh"
@@ -23,15 +24,17 @@ type Server struct {
 	UserDatabase user.Database
 }
 
-func (a *Server) ListenAndServe() error {
-	log.Printf("Listening for requests on %s\n", a.Config.GitConfig.Address)
-
+// Listen for incoming connection requests
+func (a *Server) listen() error {
 	var err error
 	a.listener, err = net.Listen("tcp", a.Config.GitConfig.Address)
 	if err != nil {
-		return nil
+		return err
 	}
+	return nil
+}
 
+func (a *Server) AcceptClients() error {
 	for {
 		conn, err := a.listener.Accept()
 		if err != nil {
@@ -52,15 +55,17 @@ func (a *Server) HostKey() ssh.Signer {
 }
 
 // NewServer creates a new git ssh server
-func NewServer(cfg server.Config) *Server {
+func NewServer(cfg server.Config) (*Server, error) {
+	log.Printf("INFO: Creating git server on %s\n", cfg.GitConfig.Address)
+
 	privateBytes, err := ioutil.ReadFile(cfg.PrivateKey)
 	if err != nil {
-		log.Fatalf("could not read private key: %v", err)
+		return nil, fmt.Errorf("could not read private key: %v", err)
 	}
 
 	hostKey, err := ssh.ParsePrivateKey(privateBytes)
 	if err != nil {
-		log.Fatalf("could not parse private key: %v", err)
+		return nil, fmt.Errorf("could not parse private key: %v", err)
 	}
 
 	result := &Server{
@@ -69,5 +74,10 @@ func NewServer(cfg server.Config) *Server {
 		hostKey:      hostKey,
 		UserDatabase: user.New(),
 	}
-	return result
+	err = result.listen()
+	if err != nil {
+		return nil, fmt.Errorf("could not listen for incoming requests: %v", err)
+	}
+	return result, nil
+
 }
