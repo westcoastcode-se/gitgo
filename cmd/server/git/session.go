@@ -142,7 +142,7 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 		return fmt.Errorf("could not find repository %s", command.Repository)
 	}
 
-	cmd := exec.Command(command.Command, command.Repository)
+	cmd := exec.CommandContext(s.context, command.Command, command.Repository)
 	cmd.Dir = s.App.Config.RepositoryPath
 	cmd.Env = s.EnvironmentVars
 
