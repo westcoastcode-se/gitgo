@@ -12,6 +12,10 @@ type Users struct {
 }
 
 func (h *Users) ServeRoute(request *Request) error {
+	if !request.IsLoggedIn() {
+		return errors.New("not logged in")
+	}
+
 	var fingerprint = request.Query("fingerprint")
 	if len(fingerprint) == 0 {
 		return errors.New("missing query parameter 'fingerprint'")
@@ -20,7 +24,7 @@ func (h *Users) ServeRoute(request *Request) error {
 	log.Println("Testing ", fingerprint)
 
 	user := api.User{
-		Name:     "apiserver_client",
+		Name:     request.User.Name,
 		Password: "asdf",
 		PublicKeys: []api.PublicKey{
 			{

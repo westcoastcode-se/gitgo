@@ -39,6 +39,7 @@ func (a *Server) HandleConnection(conn net.Conn) {
 		connection:      conn,
 		hostKey:         a.hostKey,
 		apiServerClient: a.apiServerClient,
+		gitBinDir:       a.config.GitBinDir,
 		repositoryPath:  a.config.RepositoriesPath,
 		environmentVars: []string{},
 	}

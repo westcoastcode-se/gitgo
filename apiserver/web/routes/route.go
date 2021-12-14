@@ -14,6 +14,10 @@ type Request struct {
 	URI      string
 }
 
+func (r *Request) IsLoggedIn() bool {
+	return r.User != nil
+}
+
 func (r *Request) Query(param string) string {
 	return r.Original.URL.Query().Get(param)
 }

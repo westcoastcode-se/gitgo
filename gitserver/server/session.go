@@ -34,6 +34,9 @@ type Session struct {
 	// User an authorized user if set, nil if no user is found
 	User *api.User
 
+	// gitBinDir points to where git binaries are located
+	gitBinDir string
+
 	// RepositoryPath points to where repositories are located
 	repositoryPath string
 
@@ -160,7 +163,8 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 		return fmt.Errorf("could not find repository %s", command.Repository)
 	}
 
-	cmd := exec.CommandContext(s.context, command.Command, command.Repository)
+	commandFilename := filepath.Join(s.gitBinDir, command.Command)
+	cmd := exec.CommandContext(s.context, commandFilename, command.Repository)
 	cmd.Dir = s.repositoryPath
 	cmd.Env = s.environmentVars
 

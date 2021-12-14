@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/westcoastcode-se/gitgo/apiserver/server"
 	"github.com/westcoastcode-se/gitgo/apiserver/user"
+	"github.com/westcoastcode-se/gitgo/apiserver/web/responses"
 	"github.com/westcoastcode-se/gitgo/apiserver/web/routes"
 	"io/ioutil"
 	"log"
@@ -36,7 +37,11 @@ func (s Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		PublicKeys: nil,
 	}
 	var usersRoute = &routes.Users{}
-	usersRoute.ServeRoute(request)
+
+	err := usersRoute.ServeRoute(request)
+	if err != nil {
+		responses.WriteError(r.RequestURI, &responses.NotFoundError{}, rw)
+	}
 }
 
 func NewServer(cfg server.Config) (*Server, error) {

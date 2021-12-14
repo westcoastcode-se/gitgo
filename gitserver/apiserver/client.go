@@ -52,15 +52,25 @@ func NewClient(address string, certPath string, keyPath string, caPath string,
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	// Setup HTTPS client
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
+	// Prepare client-side certificate
+	var tlsConfig *tls.Config
+	if insecureSkipVerify {
+		tlsConfig = &tls.Config{
+			Certificates:       []tls.Certificate{cert},
+			InsecureSkipVerify: insecureSkipVerify,
+		}
+	} else {
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      caCertPool,
+		}
 	}
 
+	// Configure the actual https client
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
 		MaxIdleConns:    20,
+		IdleConnTimeout: 5 * time.Minute,
 	}
 	client := &Client{
 		Address: address,

@@ -11,6 +11,9 @@ type Config struct {
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
 
+	// GitBinDir points to the directory where git binaries are located
+	GitBinDir string
+
 	// Root path where the actual repositories are found
 	RepositoriesPath string
 
@@ -41,12 +44,13 @@ func LoadConfig() *Config {
 		ReadTimeout:        5000 * time.Millisecond,
 		WriteTimeout:       5000 * time.Millisecond,
 		IdleTimeout:        5000 * time.Millisecond,
+		GitBinDir:          "C:\\Program Files\\Git\\mingw64\\bin",
 		RepositoriesPath:   DefaultRepositoriesPath,
 		SSHKeyPath:         "data/gitserver.key",
 		APIServerAddress:   "https://localhost:9998",
 		ClientCertPath:     "data/apiserver_client.crt",
 		ClientKeyPath:      "data/apiserver_client.key",
-		ClientCAPath:       "data/apiserver.crt",
+		ClientCAPath:       "data/ca.crt",
 		InsecureSkipVerify: true,
 	}
 	return cfg
