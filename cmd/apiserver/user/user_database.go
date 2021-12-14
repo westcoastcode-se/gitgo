@@ -21,7 +21,7 @@ type Database interface {
 
 type DatabaseImpl struct {
 	// Database is a generic json database
-	contentDatabase *db.JsonContentDatabase
+	contentDatabase db.ContentDatabase
 
 	users []*User
 	mutex *sync.RWMutex
@@ -82,8 +82,9 @@ func (d *DatabaseImpl) reload() error {
 	return nil
 }
 
-func New() Database {
+func New(database db.ContentDatabase) Database {
 	return &DatabaseImpl{
+		contentDatabase: database,
 		users: []*User{
 			{
 				Name:       "superuser",

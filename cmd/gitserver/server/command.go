@@ -1,8 +1,7 @@
-package git
+package server
 
 import (
 	"errors"
-	"gitgo/apiserver/utils"
 	"regexp"
 	"strings"
 )
@@ -44,7 +43,7 @@ func testRepositoryPath(s string) bool {
 }
 
 func Parse(s string) (*Command, error) {
-	parts := utils.SplitOnSpace(s)
+	parts := SplitOnSpace(s)
 	if len(parts) < 2 {
 		return &Command{
 			OriginalCommand: s,

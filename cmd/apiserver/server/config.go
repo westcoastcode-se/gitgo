@@ -1,40 +1,23 @@
 package server
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"io/ioutil"
-	"log"
 	"time"
 )
 
-const DefaultHost = "localhost"
-const DefaultGitAddress = DefaultHost + ":9999"
-const DefaultWebAddress = DefaultHost + ":9998"
-const DefaultCertPath = "data/server/server.crt"
-const DefaultPrivateKey = "data/server/server.key"
-const DefaultRepositoryPath = "data/server/repositories"
-const DefaultDatabasePath = "data/server/db"
-
-type WebConfig struct {
-	Address      string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
-}
-
-type GitConfig struct {
-	Address      string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
-}
+const DefaultAddress = ":9998"
+const DefaultCAPath = "data/ca.crt"
+const DefaultCertPath = "data/apiserver.crt"
+const DefaultPrivateKey = "data/apiserver.key"
+const DefaultRepositoryPath = "data/repositories"
+const DefaultDatabasePath = "data/db"
 
 type Config struct {
-	GitConfig
-	WebConfig
+	Address      string
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 
-	Host       string
+	CAPath     string
 	CertPath   string
 	PrivateKey string
 
@@ -44,45 +27,15 @@ type Config struct {
 
 	// RepositoryPath points to where repositories are located
 	RepositoryPath string
-
-	SuperUsername  string
-	SuperPassword  string
-	SuperPublicKey string
-}
-
-func (c *Config) ToTLSConfig() *tls.Config {
-	var caCert []byte
-	var err error
-	var caCertPool *x509.CertPool
-	caCert, err = ioutil.ReadFile(c.CertPath)
-	if err != nil {
-		log.Fatal("Error opening cert file", c.CertPath, ", error ", err)
-	}
-	caCertPool = x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	return &tls.Config{
-		ServerName: c.Host,
-		ClientCAs:  caCertPool,
-		MinVersion: tls.VersionTLS12,
-	}
 }
 
 func LoadConfig() Config {
 	return Config{
-		GitConfig: GitConfig{
-			Address:      DefaultGitAddress,
-			ReadTimeout:  5000 * time.Millisecond,
-			WriteTimeout: 5000 * time.Millisecond,
-			IdleTimeout:  5000 * time.Millisecond,
-		},
-		WebConfig: WebConfig{
-			Address:      DefaultWebAddress,
-			ReadTimeout:  5000 * time.Millisecond,
-			WriteTimeout: 5000 * time.Millisecond,
-			IdleTimeout:  5000 * time.Millisecond,
-		},
-		Host:           DefaultHost,
+		Address:        DefaultAddress,
+		ReadTimeout:    5000 * time.Millisecond,
+		WriteTimeout:   5000 * time.Millisecond,
+		IdleTimeout:    5 * time.Minute,
+		CAPath:         DefaultCAPath,
 		CertPath:       DefaultCertPath,
 		PrivateKey:     DefaultPrivateKey,
 		RepositoryPath: DefaultRepositoryPath,

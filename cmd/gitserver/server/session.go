@@ -1,12 +1,11 @@
-package git
+package server
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"gitgo/apiserver/server"
-	"gitgo/apiserver/user"
-	"gitgo/apiserver/utils"
+	"gitgo/api"
+	"gitgo/gitserver/apiserver"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
@@ -18,47 +17,48 @@ import (
 
 var PublicKeyNotFoundError = errors.New("could not find user matching the supplied publicKey")
 
+// Session is an active SSH session
 type Session struct {
-	App        *Server
-	Connection net.Conn
-
-	context *server.Context
+	context *Context
 	cancel  context.CancelFunc
 
-	// User associated with this session
-	user *user.User
+	// Connection that represents a connection to this client
+	connection net.Conn
+
+	// hostKey represents the private key
+	hostKey ssh.Signer
+
+	// apiServerClient can be used to talk to an api server
+	apiServerClient *apiserver.Client
+
+	// User an authorized user if set, nil if no user is found
+	User *api.User
+
+	// RepositoryPath points to where repositories are located
+	repositoryPath string
 
 	// EnvironmentVars contains all environment variables requested by the client
 	// to be used when executing the actual git commands
-	EnvironmentVars []string
+	environmentVars []string
 }
 
-func (s *Session) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-	fingerprint := ssh.FingerprintSHA256(key)
-	user := s.App.UserDatabase.GetUserUsingPublicKey(fingerprint)
-	if user == nil {
-		log.Printf("WARN: could not find user with fingerprint %s\n", fingerprint)
-		return nil, PublicKeyNotFoundError
-	}
-	s.user = user
-	s.context.SetValue(server.ContextUser, s.user)
-	return &ssh.Permissions{}, nil
+func (s *Session) Close() {
+	s.cancel()
 }
 
-// HandleConnection does the actual processing of all requests made on the associated connection
 func (s *Session) HandleConnection() {
 	// Prepare configuration for this connection
 	sshConfig := ssh.ServerConfig{
 		Config: ssh.Config{},
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			return s.PublicKeyCallback(conn, key)
+			return s.publicKeyCallback(conn, key)
 		},
-		ServerVersion: s.App.Version,
+		ServerVersion: Version,
 	}
-	sshConfig.AddHostKey(s.App.HostKey())
+	sshConfig.AddHostKey(s.hostKey)
 
 	// Before use, a handshake must be performed on the incoming net.Conn.
-	sConn, newChannels, reqs, err := ssh.NewServerConn(s.Connection, &sshConfig)
+	sConn, newChannels, reqs, err := ssh.NewServerConn(s.connection, &sshConfig)
 	if err != nil {
 		log.Printf("WARN: failed to complete handshaking: %v\n", err)
 		return
@@ -68,7 +68,25 @@ func (s *Session) HandleConnection() {
 	// It's important to "service" requests, otherwise the connection will hang.
 	// We only care about requests received over a session channel on this git server
 	go ssh.DiscardRequests(reqs)
+	go s.processNewChannels(newChannels)
+}
 
+func (s *Session) publicKeyCallback(_ ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+	fingerprint := ssh.FingerprintSHA256(key)
+
+	// Resolve the user using the public key
+	var err error
+	s.User, err = s.apiServerClient.FindUserUsingPublicKey(fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	if s.User == nil {
+		return nil, PublicKeyNotFoundError
+	}
+	return &ssh.Permissions{}, nil
+}
+
+func (s *Session) processNewChannels(newChannels <-chan ssh.NewChannel) {
 	// service requests received on a channel
 	for newChannel := range newChannels {
 		channelType := newChannel.ChannelType()
@@ -81,7 +99,6 @@ func (s *Session) HandleConnection() {
 	}
 }
 
-// handleNewChannel handles all requests on an established channel
 func (s *Session) handleNewChannel(newChannel ssh.NewChannel) {
 	ch, reqs, err := newChannel.Accept()
 	if err != nil {
@@ -121,15 +138,16 @@ func (s *Session) processEnvRequest(req *ssh.Request) {
 	log.Printf("INFO: incoming env request: %q\n", env.Name)
 
 	if !isEnvironmentAllowed(env.Name) {
-		log.Printf("INFO: environment variable %s, sent by %s, is not allowed", env.Name, s.Connection.RemoteAddr())
+		log.Printf("INFO: environment variable %s, sent by %s, is not allowed", env.Name,
+			s.connection.RemoteAddr())
 		return
 	}
 
-	s.EnvironmentVars = append(s.EnvironmentVars, env.Name+"="+env.Value)
+	s.environmentVars = append(s.environmentVars, env.Name+"="+env.Value)
 }
 
 func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
-	payload := utils.ReadPayload(req)
+	payload := ReadPayload(req)
 	log.Printf("INFO: incoming exec request: %q\n", payload)
 
 	command, err := Parse(payload)
@@ -138,13 +156,13 @@ func (s *Session) processExecRequest(ch ssh.Channel, req *ssh.Request) error {
 		return err
 	}
 
-	if !RepositoryExists(filepath.Join(s.App.Config.RepositoryPath, command.Repository)) {
+	if !RepositoryExists(filepath.Join(s.repositoryPath, command.Repository)) {
 		return fmt.Errorf("could not find repository %s", command.Repository)
 	}
 
 	cmd := exec.CommandContext(s.context, command.Command, command.Repository)
-	cmd.Dir = s.App.Config.RepositoryPath
-	cmd.Env = s.EnvironmentVars
+	cmd.Dir = s.repositoryPath
+	cmd.Env = s.environmentVars
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -228,17 +246,4 @@ func isEnvironmentAllowed(key string) bool {
 		}
 	}
 	return true
-}
-
-// NewSession creates a new session for a specific connection
-func NewSession(a *Server, conn net.Conn) *Session {
-	ctx, cancel := server.NewContext()
-	ctx.SetValue(server.ContextLocalAddr, conn.LocalAddr())
-	ctx.SetValue(server.ContextRemoteAddr, conn.RemoteAddr())
-	return &Session{
-		App:        a,
-		Connection: conn,
-		context:    ctx,
-		cancel:     cancel,
-	}
 }
