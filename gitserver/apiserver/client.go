@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"gitgo/api"
+	"github.com/westcoastcode-se/gitgo/api"
 	"html"
 	"io/ioutil"
 	"net/http"

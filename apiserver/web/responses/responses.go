@@ -2,7 +2,7 @@ package responses
 
 import (
 	"encoding/json"
-	"gitgo/api"
+	"github.com/westcoastcode-se/gitgo/api"
 	"net/http"
 )
 

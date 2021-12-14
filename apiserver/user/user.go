@@ -1,6 +1,6 @@
 package user
 
-import "gitgo/api"
+import "github.com/westcoastcode-se/gitgo/api"
 
 type Users struct {
 	Users []*User

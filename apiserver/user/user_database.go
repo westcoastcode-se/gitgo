@@ -3,9 +3,9 @@ package user
 import (
 	"errors"
 	"fmt"
-	"gitgo/api"
-	"gitgo/apiserver/db"
-	"gitgo/apiserver/event"
+	"github.com/westcoastcode-se/gitgo/api"
+	"github.com/westcoastcode-se/gitgo/apiserver/db"
+	"github.com/westcoastcode-se/gitgo/apiserver/event"
 	"sync"
 )
 

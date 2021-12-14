@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"gitgo/apiserver/server"
-	"gitgo/apiserver/user"
+	"github.com/westcoastcode-se/gitgo/apiserver/server"
+	"github.com/westcoastcode-se/gitgo/apiserver/user"
 	"net/http"
 )
 
@@ -20,6 +20,7 @@ func (r *Request) Query(param string) string {
 
 func (r *Request) Ok(body []byte) (int, error) {
 	r.Response.WriteHeader(http.StatusOK)
+	r.Response.Header().Set("Content-Type", "application/json")
 	return r.Response.Write(body)
 }
 

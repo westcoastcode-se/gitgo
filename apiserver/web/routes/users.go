@@ -3,7 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"errors"
-	"gitgo/api"
+	"github.com/westcoastcode-se/gitgo/api"
 	"log"
 	"net/http"
 )

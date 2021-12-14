@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"gitgo/apiserver/server"
-	"gitgo/apiserver/web/routes"
-	"github.com/gorilla/mux"
+	"github.com/westcoastcode-se/gitgo/apiserver/server"
+	"github.com/westcoastcode-se/gitgo/apiserver/user"
+	"github.com/westcoastcode-se/gitgo/apiserver/web/routes"
 	"io/ioutil"
 	"log"
 	"net"
@@ -28,10 +28,15 @@ func (s *Server) ServeTLS() error {
 }
 
 func (s Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	request := routes.FromHttpRequest(rw, r)
 	var commonName = TryExtractCommonName(r.TLS)
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte(commonName))
-	log.Println("Common name: ", commonName)
+	request.User = &user.User{
+		Name:       commonName,
+		Password:   "",
+		PublicKeys: nil,
+	}
+	var usersRoute = &routes.Users{}
+	usersRoute.ServeRoute(request)
 }
 
 func NewServer(cfg server.Config) (*Server, error) {
@@ -42,22 +47,6 @@ func NewServer(cfg server.Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not listen for requests on %v", err)
 	}
-
-	// Register all routes available on this server
-	router := mux.NewRouter()
-	router.
-		Handle("/api/v1/users", &routes.Users{}).
-		Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
-	router.
-		Handle("/api/v1/repositories", &routes.Repositories{}).
-		Methods(http.MethodGet, http.MethodPut)
-	router.
-		Handle("/api/v1/repositories/{name}", &routes.Repository{}).
-		Methods(http.MethodGet, http.MethodDelete)
-	router.
-		Handle("/api/v1/tokens", &routes.Tokens{}).
-		Methods(http.MethodGet, http.MethodPost)
-	router.NotFoundHandler = &routes.NotFound{}
 
 	log.Println("INFO: Reading CA user to verify client-side certificates")
 	cert, err := ioutil.ReadFile(cfg.CAPath)

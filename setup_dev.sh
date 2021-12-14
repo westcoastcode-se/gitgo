@@ -2,6 +2,8 @@
 set -e
 cd data
 
+export MSYS_NO_PATHCONV=1
+
 # Create the root ca
 openssl genrsa -des3 -passout pass:changeme -out ca.pass.key 4096
 openssl rsa -passin pass:changeme -in ca.pass.key -out ca.key

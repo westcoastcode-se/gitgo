@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitgo/gitserver/server"
+	"github.com/westcoastcode-se/gitgo/gitserver/server"
 	"log"
 )
 

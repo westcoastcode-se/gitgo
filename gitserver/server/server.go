@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"gitgo/gitserver/apiserver"
 	"github.com/google/uuid"
+	"github.com/westcoastcode-se/gitgo/gitserver/apiserver"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"

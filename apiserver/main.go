@@ -1,9 +1,9 @@
 package main
 
 import (
-	"gitgo/api"
-	"gitgo/apiserver/server"
-	"gitgo/apiserver/web"
+	"github.com/westcoastcode-se/gitgo/api"
+	"github.com/westcoastcode-se/gitgo/apiserver/server"
+	"github.com/westcoastcode-se/gitgo/apiserver/web"
 	"log"
 )
 
